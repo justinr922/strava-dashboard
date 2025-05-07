@@ -1,10 +1,16 @@
 const express = require('express');
 const axios = require('axios');
 const dotenv = require('dotenv');
+const cors = require('cors');
 
 dotenv.config();
 const app = express();
 const port = 3000;
+
+app.use(express.json());
+app.use(cors({
+    origin: 'http://localhost:3001',
+}));
 
 // Basic GET endpoint to test server connectivity
 app.get('/ping', (req, res) => {
@@ -23,7 +29,6 @@ app.get('/auth/strava', (req, res) => {
 // Step 2: Handle the callback from Strava
 app.get('/auth/strava/callback', async (req, res) => {
   const code = req.query.code;
-
   try {
     const response = await axios.post(
       'https://www.strava.com/oauth/token',
@@ -35,17 +40,42 @@ app.get('/auth/strava/callback', async (req, res) => {
       }
     );
 
-    const { access_token, athlete } = response.data;
-    res.redirect(`http://localhost:3001/?token=${access_token}`)
+    const { access_token, athlete, refresh_token, expires_at } = response.data;
+    // console.log(access_token, athlete)
+    res.redirect(
+        `http://localhost:3001/?token=${access_token}&refresh_token=${refresh_token}&expires_at=${expires_at}`
+      ) // Redirect to frontend with tokens
   } catch (error) {
     console.error(error.response.data);
     res.status(500).send('Authentication failed.');
   }
 });
 
+app.post('/refresh-token', async (req, res) => {
+  console.log(req)
+  const { refresh_token } = req.body;
+
+  try {
+    const response = await axios.post('https://www.strava.com/api/v3/oauth/token', null, {
+      params: {
+        client_id: process.env.STRAVA_CLIENT_ID,
+        client_secret: process.env.STRAVA_CLIENT_SECRET,
+        grant_type: 'refresh_token',
+        refresh_token,
+      },
+    });
+
+    res.json(response.data);
+  } catch (error) {
+    console.error('Token refresh failed:', error.response?.data || error.message);
+    res.status(400).send('Unable to refresh token');
+  }
+});
+
+
 app.get('/api/activities', async (req, res) => {
   const accessToken = req.query.access_token; // You got this earlier
-  console.log(accessToken)
+  // console.log(accessToken)
   try {
     const response = await axios.get('https://www.strava.com/api/v3/athlete/activities', {
       headers: {
