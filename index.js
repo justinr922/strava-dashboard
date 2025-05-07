@@ -36,7 +36,7 @@ app.get('/auth/strava/callback', async (req, res) => {
     );
 
     const { access_token, athlete } = response.data;
-    res.json({ message: 'Success! You are connected to Strava.', athlete, access_token });
+    res.redirect(`http://localhost:3001/?token=${access_token}`)
   } catch (error) {
     console.error(error.response.data);
     res.status(500).send('Authentication failed.');
