@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 
 import ActivityTable from './components/AtivityTable';
+import ActivityDetail from './components/ActivityDetail';
 
 import './App.css';
 
@@ -72,65 +73,52 @@ function App() {
 
   return (
     <div className="p-8 bg-gray-100 min-h-screen">
-  <h1 className="text-3xl font-bold mb-6 text-center text-gray-800">
-    Strava Activity Analysis
-  </h1>
+      <h1 className="text-3xl font-bold mb-6 text-center text-gray-800">
+        Strava Activity Analysis
+      </h1>
 
-  {!auth && (
-    <div className="flex justify-center">
-      <a href="http://localhost:3000/auth/strava">
-        <button className="bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 px-4 rounded shadow">
-          Connect with Strava
-        </button>
-      </a>
-    </div>
-  )}
-
-  {auth && (
-    <>
-      <div className="flex justify-center mb-6 gap-4">
-        <button
-          onClick={fetchActivities}
-          className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded shadow"
-        >
-          Fetch Activities
-        </button>
-        <button
-          onClick={logout}
-          className="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded shadow"
-        >
-          Logout
-        </button>
-      </div>
-
-      <div className="flex gap-6">
+      {!auth && (
         <div className="flex justify-center">
-          <ActivityTable activities={activities} setSelectedActivity={setSelectedActivity} selectedActivity={selectedActivity}/>
+          <a href="http://localhost:3000/auth/strava">
+            <button className="bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 px-4 rounded shadow">
+              Connect with Strava
+            </button>
+          </a>
         </div>
+      )}
 
-        {/* Activity Detail Panel */}
-        {selectedActivity && (
-          <div className="w-1/2 bg-white rounded-xl shadow p-6">
-            <div className="flex justify-between items-start mb-4">
-              <h2 className="text-xl font-bold">{selectedActivity.name}</h2>
-              <button
-                onClick={() => setSelectedActivity(null)}
-                className="text-sm text-gray-500 hover:text-gray-700"
-              >
-                ✕
-              </button>
-            </div>
-            <p><strong>Type:</strong> {selectedActivity.type}</p>
-            <p><strong>Date:</strong> {new Date(selectedActivity.start_date).toLocaleString()}</p>
-            <p><strong>Distance:</strong> {(selectedActivity.distance / 1000).toFixed(2)} km</p>
-            <p><strong>Time:</strong> {Math.round(selectedActivity.moving_time / 60)} minutes</p>
-            <p><strong>Pace:</strong> {selectedActivity.formattedSpeed}</p>
+      {auth && (
+        <>
+          <div className="flex justify-center mb-6 gap-4">
+            <button
+              onClick={fetchActivities}
+              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded shadow"
+            >
+              Fetch Activities
+            </button>
+            <button
+              onClick={logout}
+              className="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded shadow"
+            >
+              Logout
+            </button>
           </div>
-        )}
-      </div>
-    </>
-  )}
-</div>
+
+          <div className="flex gap-6 justify-center">
+            <div className="flex-2 justify-center">
+              <ActivityTable activities={activities} setSelectedActivity={setSelectedActivity} selectedActivity={selectedActivity} />
+            </div>
+
+            {/* Activity Detail Panel */}
+              <div className="sticky top-6" style={{alignSelf:"flex-start", flexGrow: 1}}>
+                {selectedActivity && (
+                <ActivityDetail activity={selectedActivity} onClose={() => setSelectedActivity(null)} />
+              )}
+              </div>
+          </div>
+        </>
+      )}
+    </div>
   );
 }
 

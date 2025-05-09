@@ -12,7 +12,7 @@ const formatSpeed = (speedMps, type) => {
         const mph = speedMps * 2.23694;
         return `${mph.toFixed(1)} mi/h`;
     }
-    return `${speedMps.toFixed(2)} m/s`;
+    return `N/A`;
 };
 
 const ActivityTable = ({ activities, setSelectedActivity, selectedActivity }) => {
