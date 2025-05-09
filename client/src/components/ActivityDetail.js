@@ -36,7 +36,8 @@ export default function ActivityDetail({ activity, onClose }) {
         >
             <TileLayer
             attribution='&copy; OpenStreetMap contributors'
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            url='https://basemap.nationalmap.gov/arcgis/rest/services/USGSTopo/MapServer/tile/{z}/{y}/{x}'
+            maxZoom={20}
             />
             <Polyline positions={latlngs} color="blue" weight={4} />
       </MapContainer>)}

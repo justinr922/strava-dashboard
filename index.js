@@ -76,7 +76,6 @@ app.get('/api/athlete', async (req, res) => {
   const accessToken = req.query.access_token; // You got this earlier
   // console.log(accessToken)
   try {
-    console.log('getting athlete')
     const response = await axios.get('https://www.strava.com/api/v3/athlete', {
       headers: {
         Authorization: `Bearer ${accessToken}`,
