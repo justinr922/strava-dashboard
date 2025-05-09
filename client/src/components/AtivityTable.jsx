@@ -15,7 +15,7 @@ const formatSpeed = (speedMps, type) => {
     return `${speedMps.toFixed(2)} m/s`;
 };
 
-const ActivityTable = ({ activities }) => {
+const ActivityTable = ({ activities, setSelectedActivity }) => {
     if (!activities || activities.length === 0) {
         return (
             <div className="p-6 bg-white rounded-xl shadow-md text-gray-500">
@@ -43,7 +43,7 @@ const ActivityTable = ({ activities }) => {
                     {activities.map((act) => (
                         <tr key={act.id} className="hover:bg-gray-50">
                             <td className="px-4 py-2 border-b">{act.start_date_local.slice(0,10)}</td>
-                            <td className="px-4 py-2 border-b">{act.name}</td>
+                            <td onClick={() => setSelectedActivity({...act, formattedSpeed: formatSpeed(act.average_speed, act.type)})} style={{ cursor: 'pointer' }}className="px-4 py-2 border-b">{act.name}</td>
                             <td className="px-4 py-2 border-b">{act.type}</td>
                             <td className="px-4 py-2 border-b">
                                 {(act.distance / 1609.34).toFixed(2)}

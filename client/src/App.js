@@ -8,6 +8,7 @@ import './App.css';
 function App() {
   const [auth, setAuth] = useState('');
   const [activities, setActivities] = useState([]);
+  const [selectedActivity, setSelectedActivity] = useState(null);
 
   useEffect(() => {
     // Get token from URL
@@ -102,8 +103,30 @@ function App() {
         </button>
       </div>
 
-      <div className="flex justify-center">
-        <ActivityTable activities={activities} />
+      <div className="flex gap-6">
+        <div className="flex justify-center">
+          <ActivityTable activities={activities} setSelectedActivity={setSelectedActivity}/>
+        </div>
+
+        {/* Activity Detail Panel */}
+        {selectedActivity && (
+          <div className="w-1/2 bg-white rounded-xl shadow p-6">
+            <div className="flex justify-between items-start mb-4">
+              <h2 className="text-xl font-bold">{selectedActivity.name}</h2>
+              <button
+                onClick={() => setSelectedActivity(null)}
+                className="text-sm text-gray-500 hover:text-gray-700"
+              >
+                ✕
+              </button>
+            </div>
+            <p><strong>Type:</strong> {selectedActivity.type}</p>
+            <p><strong>Date:</strong> {new Date(selectedActivity.start_date).toLocaleString()}</p>
+            <p><strong>Distance:</strong> {(selectedActivity.distance / 1000).toFixed(2)} km</p>
+            <p><strong>Time:</strong> {Math.round(selectedActivity.moving_time / 60)} minutes</p>
+            <p><strong>Pace:</strong> {selectedActivity.formattedSpeed}</p>
+          </div>
+        )}
       </div>
     </>
   )}
