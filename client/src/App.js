@@ -42,7 +42,8 @@ function App() {
         alert('You may need to log in.');
       }
     };
-    if (auth) fetchAthlete()
+    const now = Math.floor(Date.now() / 1000)
+    if (auth && auth.expiresAt > now) fetchAthlete()
   }, [auth])
 
   const maybeRefreshToken = async () => {
