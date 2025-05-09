@@ -1,7 +1,6 @@
 import React from "react";
 
 const formatSpeed = (speedMps, type) => {
-    if (!speedMps) return "-";
     if (type === "Run") {
         const secondsPerMile = 1609.34 / speedMps;
         const minutes = Math.floor(secondsPerMile / 60);

@@ -3,6 +3,7 @@ import axios from 'axios';
 
 import ActivityTable from './components/ActivityTable';
 import ActivityDetail from './components/ActivityDetail';
+import AthleteProfile from './components/AthleteProfile';
 
 import './App.css';
 
@@ -11,18 +12,7 @@ function App() {
   const [athlete, setAthlete] = useState(null);
   const [activities, setActivities] = useState([]);
   const [selectedActivity, setSelectedActivity] = useState(null);
-
-  const fetchAthlete = async () => {
-    try {
-      await maybeRefreshToken();
-      const res = await axios.get(`/api/athlete?access_token=${auth.accessToken}`);
-      setAthlete(res.data);
-    } catch (err) {
-      console.error('Error fetching athlete:', err);
-      alert('You may need to log in.');
-    }
-  };
-
+  
   useEffect(() => {
     // Get token from URL
     const urlParams = new URLSearchParams(window.location.search);
@@ -122,6 +112,7 @@ function App() {
               Fetch Activities
             </button>
             <div className="flex items-center gap-4">
+              <AthleteProfile athlete={athlete} />
               <button
                 onClick={logout}
                 className="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded shadow"
