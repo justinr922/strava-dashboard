@@ -105,7 +105,7 @@ function App() {
 
       <div className="flex gap-6">
         <div className="flex justify-center">
-          <ActivityTable activities={activities} setSelectedActivity={setSelectedActivity}/>
+          <ActivityTable activities={activities} setSelectedActivity={setSelectedActivity} selectedActivity={selectedActivity}/>
         </div>
 
         {/* Activity Detail Panel */}
