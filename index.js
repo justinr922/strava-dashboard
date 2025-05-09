@@ -2,8 +2,8 @@ const express = require('express');
 const axios = require('axios');
 const dotenv = require('dotenv');
 const cors = require('cors');
+dotenv.config()
 
-dotenv.config();
 const app = express();
 const port = 3000;
 
@@ -22,7 +22,7 @@ app.get('/auth/strava', (req, res) => {
     console.log('Redirecting to Strava authorization page...');
   const redirect_uri = `http://localhost:${port}/auth/strava/callback`;
   res.redirect(
-    `https://www.strava.com/oauth/authorize?client_id=${process.env.STRAVA_CLIENT_ID}&response_type=code&redirect_uri=${redirect_uri}&scope=read,activity:read`
+    `https://www.strava.com/oauth/authorize?client_id=${process.env.STRAVA_CLIENT_ID}&response_type=code&redirect_uri=${redirect_uri}&scope=read,activity:read_all`
   );
 });
 
@@ -77,7 +77,7 @@ app.get('/api/activities', async (req, res) => {
   const accessToken = req.query.access_token; // You got this earlier
   // console.log(accessToken)
   try {
-    const response = await axios.get('https://www.strava.com/api/v3/athlete/activities', {
+    const response = await axios.get('https://www.strava.com/api/v3/athlete/activities?page=1&per_page=200', {
       headers: {
         Authorization: `Bearer ${accessToken}`,
       },

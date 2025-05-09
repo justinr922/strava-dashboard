@@ -79,13 +79,45 @@ function App() {
         <>
           <button onClick={fetchActivities}>Fetch Activities</button>
           <button onClick={logout} style={{ marginLeft: '1rem' }}>Logout</button>
-          <ul>
-            {activities.map((act) => (
-              <li key={act.id}>
-                <strong>{act.name}</strong> — {act.type} — {(act.distance / 1000).toFixed(2)} km
-              </li>
-            ))}
-          </ul>
+          <table>
+            <thead>
+              <th>Date</th>
+              <th>Name</th>
+              <th>Type</th>
+              <th>Distance (mi)</th>
+              <th>Moving Time (min)</th>
+              <th>Pace</th>
+              <th>Estimated Moving Calories</th>
+            </thead>
+            <tbody>
+              {activities.map((act) => {
+                var speed;
+                switch (act.type) {
+                  case "Run":
+                    const secondsPerMile = 1609.34 / act.average_speed;
+                    const minutes = Math.floor(secondsPerMile / 60);
+                    const seconds = Math.round(secondsPerMile % 60);
+                    speed = `${minutes}:${seconds.toString().padStart(2, '0')} min/mi`;
+                  case "Ride":
+                    speed = act.average_speed * 2.23694
+                    speed = `${speed.toFixed(1)} mph`
+                  default:
+                    speed = "N/A"
+                  }                  
+                return (
+                <tr key={act.id}>
+                  <td>{act.start_date_local.slice(0,10)}</td>
+                  <td>{act.name}</td>
+                  <td>{act.type}</td>
+                  <td>{(act.distance / 1609).toFixed(2)}</td>
+                  <td>{(act.moving_time / 60).toFixed(1)}</td>
+                  <td>{speed}</td>
+                  <td>{( (act.kilojoules || 0) * 4 / 4.184).toFixed(1)}</td>
+                </tr>
+                )
+              })}
+            </tbody>
+          </table>
         </>
       )}
     </div>
