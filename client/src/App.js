@@ -1,15 +1,27 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 
-import ActivityTable from './components/AtivityTable';
+import ActivityTable from './components/ActivityTable';
 import ActivityDetail from './components/ActivityDetail';
 
 import './App.css';
 
 function App() {
   const [auth, setAuth] = useState('');
+  const [athlete, setAthlete] = useState(null);
   const [activities, setActivities] = useState([]);
   const [selectedActivity, setSelectedActivity] = useState(null);
+
+  const fetchAthlete = async () => {
+    try {
+      await maybeRefreshToken();
+      const res = await axios.get(`/api/athlete?access_token=${auth.accessToken}`);
+      setAthlete(res.data);
+    } catch (err) {
+      console.error('Error fetching athlete:', err);
+      alert('You may need to log in.');
+    }
+  };
 
   useEffect(() => {
     // Get token from URL
@@ -29,6 +41,19 @@ function App() {
       if (stored) setAuth(JSON.parse(stored));
     }
   }, []);
+
+  useEffect(() => {
+    const fetchAthlete = async () => {
+      try {
+        const res = await axios.get(`/api/athlete?access_token=${auth.accessToken}`);
+        setAthlete(res.data);
+      } catch (err) {
+        console.error('Error fetching athlete:', err);
+        alert('You may need to log in.');
+      }
+    };
+    if (auth) fetchAthlete()
+  }, [auth])
 
   const maybeRefreshToken = async () => {
     const now = Math.floor(Date.now() / 1000);
@@ -96,25 +121,28 @@ function App() {
             >
               Fetch Activities
             </button>
-            <button
-              onClick={logout}
-              className="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded shadow"
-            >
-              Logout
-            </button>
+            <div className="flex items-center gap-4">
+              <button
+                onClick={logout}
+                className="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded shadow"
+              >
+                Logout
+              </button>
+            </div>
           </div>
 
           <div className="flex gap-6 justify-center">
-            <div className="flex-2 justify-center">
+            <div className="justify-center">
               <ActivityTable activities={activities} setSelectedActivity={setSelectedActivity} selectedActivity={selectedActivity} />
             </div>
 
             {/* Activity Detail Panel */}
-              <div className="sticky top-6" style={{alignSelf:"flex-start", flexGrow: 1}}>
-                {selectedActivity && (
-                <ActivityDetail activity={selectedActivity} onClose={() => setSelectedActivity(null)} />
+            {selectedActivity && (
+                <div className="sticky top-6" style={{alignSelf:"flex-start", flexGrow: 1}}>
+                  <ActivityDetail activity={selectedActivity} onClose={() => setSelectedActivity(null)} />
+                </div>
               )}
-              </div>
+              
           </div>
         </>
       )}

@@ -72,6 +72,24 @@ app.post('/refresh-token', async (req, res) => {
   }
 });
 
+app.get('/api/athlete', async (req, res) => {
+  const accessToken = req.query.access_token; // You got this earlier
+  // console.log(accessToken)
+  try {
+    console.log('getting athlete')
+    const response = await axios.get('https://www.strava.com/api/v3/athlete', {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+
+    const athlete = response.data;
+    res.json(athlete); // You can later filter/format this
+  } catch (error) {
+    console.error(error.response?.data || error.message);
+    res.status(500).send('Failed to fetch athlete');
+  }
+});
 
 app.get('/api/activities', async (req, res) => {
   const accessToken = req.query.access_token; // You got this earlier
