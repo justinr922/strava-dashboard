@@ -12,7 +12,10 @@ import './App.css';
 function App() {
   const { auth, setAuth, maybeRefreshToken, logout } = useAuth();
   const [athlete, setAthlete] = useState(null);
-  const [activities, setActivities] = useState([]);
+  const [activities, setActivities] = useState(() => {
+    const cached = localStorage.getItem('activities');
+    return cached ? JSON.parse(cached) : [];
+  });
   const [selectedActivity, setSelectedActivity] = useState(null);
 
   useEffect(() => {
@@ -37,6 +40,7 @@ function App() {
       await maybeRefreshToken();
       const res = await axios.get(`/api/activities?access_token=${auth.accessToken}`);
       setActivities(res.data);
+      localStorage.setItem('activities', JSON.stringify(res.data));
     } catch (err) {
       console.error('Error fetching activities:', err);
       alert('You may need to log in.');

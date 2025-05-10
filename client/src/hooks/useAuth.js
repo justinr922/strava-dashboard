@@ -46,6 +46,7 @@ export default function useAuth() {
   const logout = () => {
     setAuth(null);
     localStorage.removeItem('auth');
+    localStorage.removeItem('activities');
   };
 
   return { auth, setAuth, maybeRefreshToken, logout };
