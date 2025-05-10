@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 
+import HeaderBar from './components/HeaderBar';
 import ActivityTable from './components/ActivityTable';
 import ActivityDetail from './components/ActivityDetail';
-import AthleteProfile from './components/AthleteProfile';
 
 import useAuth from './hooks/useAuth';
 import { fetchAthlete as fetchAthleteAPI, fetchActivities as fetchActivitiesAPI } from './api/api';
@@ -12,7 +12,7 @@ import './App.css';
 const ACTIVITY_CACHE_TTL = 60 * 60 * 1000 * 24
 
 function App() {
-  const { auth, setAuth, maybeRefreshToken, logout } = useAuth();
+  const { auth, maybeRefreshToken, logout } = useAuth();
   const [athlete, setAthlete] = useState(null);
   const [activities, setActivities] = useState(() => {
     const cached = localStorage.getItem('activities');
@@ -28,21 +28,21 @@ function App() {
   const [selectedActivity, setSelectedActivity] = useState(null);
 
   useEffect(() => {
-    const fetchAthlete = async () => {
+    const fetchAthleteOnce = async () => {
+      const now = Math.floor(Date.now() / 1000);
+      if (!auth || auth.expiresAt <= now || athlete) return;
+  
       try {
-        const data = await fetchAthleteAPI(auth.accessToken);
+        const data = await fetchAthleteAPI(auth.accessToken); 
         setAthlete(data);
       } catch (err) {
         console.error('Error fetching athlete:', err);
-        alert('You may need to log in.');
       }
     };
-
-    const now = Math.floor(Date.now() / 1000);
-    if (auth && auth.expiresAt > now && !athlete) {
-      fetchAthlete();
-    }
+  
+    fetchAthleteOnce();
   }, [auth, athlete]);
+  
 
   const fetchActivities = async () => {
     try {
@@ -75,23 +75,7 @@ function App() {
 
       {auth && (
         <>
-          <div className="flex justify-center mb-6 gap-4">
-            <button
-              onClick={fetchActivities}
-              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded shadow"
-            >
-              Fetch Activities
-            </button>
-            <div className="flex items-center gap-4">
-              <AthleteProfile athlete={athlete} />
-              <button
-                onClick={logout}
-                className="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded shadow"
-              >
-                Logout
-              </button>
-            </div>
-          </div>
+          <HeaderBar athlete={athlete} onFetch={fetchActivities} onLogout={logout} />
 
           <div className="flex gap-6 justify-center">
             <div className="justify-center">
