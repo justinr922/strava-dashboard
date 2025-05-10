@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
 
 import ActivityTable from './components/ActivityTable';
 import ActivityDetail from './components/ActivityDetail';
 import AthleteProfile from './components/AthleteProfile';
 
 import useAuth from './hooks/useAuth';
+import { fetchAthlete as fetchAthleteAPI, fetchActivities as fetchActivitiesAPI } from './api/api';
 
 import './App.css';
 
@@ -30,8 +30,8 @@ function App() {
   useEffect(() => {
     const fetchAthlete = async () => {
       try {
-        const res = await axios.get(`/api/athlete?access_token=${auth.accessToken}`);
-        setAthlete(res.data);
+        const data = await fetchAthleteAPI(auth.accessToken);
+        setAthlete(data);
       } catch (err) {
         console.error('Error fetching athlete:', err);
         alert('You may need to log in.');
@@ -47,9 +47,9 @@ function App() {
   const fetchActivities = async () => {
     try {
       await maybeRefreshToken();
-      const res = await axios.get(`/api/activities?access_token=${auth.accessToken}`);
-      setActivities(res.data);
-      localStorage.setItem('activities', JSON.stringify(res.data));
+      const data = await fetchActivitiesAPI(auth.accessToken);
+      setActivities(data);
+      localStorage.setItem('activities', JSON.stringify(data));
       localStorage.setItem('activities_cached_at', Date.now().toString());
     } catch (err) {
       console.error('Error fetching activities:', err);

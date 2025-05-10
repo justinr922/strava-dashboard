@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import axios from 'axios';
+import { refreshToken as requestRefreshToken } from '../api/api';
 
 export default function useAuth() {
   const [auth, setAuth] = useState(null);
@@ -21,27 +21,26 @@ export default function useAuth() {
     }
   }, []);
 
-  const maybeRefreshToken = async () => {
-    const now = Math.floor(Date.now() / 1000);
-    if (!auth || auth.expiresAt > now) return;
-
-    try {
-      const res = await axios.post('/refresh-token', {
-        refresh_token: auth.refreshToken,
-      });
-      const { access_token, refresh_token, expires_at } = res.data;
-      const newAuth = {
-        accessToken: access_token,
-        refreshToken: refresh_token,
-        expiresAt: expires_at,
-      };
-      setAuth(newAuth);
-      localStorage.setItem('auth', JSON.stringify(newAuth));
-    } catch (err) {
-      console.error('Token refresh failed:', err);
-      logout();
-    }
-  };
+  
+    const maybeRefreshToken = async () => {
+        const now = Math.floor(Date.now() / 1000);
+        if (auth.expiresAt > now) return;
+    
+        try {
+        const data = await requestRefreshToken(auth.refreshToken);
+        const newAuth = {
+            accessToken: data.access_token,
+            refreshToken: data.refresh_token,
+            expiresAt: data.expires_at,
+        };
+        setAuth(newAuth);
+        localStorage.setItem('auth', JSON.stringify(newAuth));
+        } catch (err) {
+        console.error('Failed to refresh token:', err);
+        logout();
+        throw err;
+        }
+    };
 
   const logout = () => {
     setAuth(null);
