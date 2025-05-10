@@ -9,12 +9,21 @@ import useAuth from './hooks/useAuth';
 
 import './App.css';
 
+const ACTIVITY_CACHE_TTL = 60 * 60 * 1000 * 24
+
 function App() {
   const { auth, setAuth, maybeRefreshToken, logout } = useAuth();
   const [athlete, setAthlete] = useState(null);
   const [activities, setActivities] = useState(() => {
     const cached = localStorage.getItem('activities');
-    return cached ? JSON.parse(cached) : [];
+    const cachedAt = localStorage.getItem('activities_cached_at');
+    if (cached && cachedAt) {
+      const age = Date.now() - parseInt(cachedAt, 10);
+      if (age < ACTIVITY_CACHE_TTL) {
+        return JSON.parse(cached);
+      }
+    }
+    return [];
   });
   const [selectedActivity, setSelectedActivity] = useState(null);
 
@@ -41,6 +50,7 @@ function App() {
       const res = await axios.get(`/api/activities?access_token=${auth.accessToken}`);
       setActivities(res.data);
       localStorage.setItem('activities', JSON.stringify(res.data));
+      localStorage.setItem('activities_cached_at', Date.now().toString());
     } catch (err) {
       console.error('Error fetching activities:', err);
       alert('You may need to log in.');

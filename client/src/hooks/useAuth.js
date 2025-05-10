@@ -47,7 +47,9 @@ export default function useAuth() {
     setAuth(null);
     localStorage.removeItem('auth');
     localStorage.removeItem('activities');
+    localStorage.removeItem('activities_cached_at');
   };
+  
 
   return { auth, setAuth, maybeRefreshToken, logout };
 }
