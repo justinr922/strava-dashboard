@@ -5,32 +5,15 @@ import ActivityTable from './components/ActivityTable';
 import ActivityDetail from './components/ActivityDetail';
 import AthleteProfile from './components/AthleteProfile';
 
+import useAuth from './hooks/useAuth';
+
 import './App.css';
 
 function App() {
-  const [auth, setAuth] = useState('');
+  const { auth, setAuth, maybeRefreshToken, logout } = useAuth();
   const [athlete, setAthlete] = useState(null);
   const [activities, setActivities] = useState([]);
   const [selectedActivity, setSelectedActivity] = useState(null);
-  
-  useEffect(() => {
-    // Get token from URL
-    const urlParams = new URLSearchParams(window.location.search);
-
-    const accessToken = urlParams.get('token');
-    const refreshToken = urlParams.get('refresh_token');
-    const expiresAt = urlParams.get('expires_at');
-
-    if (accessToken && refreshToken && expiresAt) {
-      const authData = { accessToken, refreshToken, expiresAt };
-      localStorage.setItem('auth', JSON.stringify(authData));
-      setAuth(authData);
-      window.history.replaceState({}, document.title, '/');
-    } else {
-      const stored = localStorage.getItem('auth');
-      if (stored) setAuth(JSON.parse(stored));
-    }
-  }, []);
 
   useEffect(() => {
     const fetchAthlete = async () => {
@@ -42,39 +25,12 @@ function App() {
         alert('You may need to log in.');
       }
     };
-    const now = Math.floor(Date.now() / 1000)
-    if (auth && auth.expiresAt > now) fetchAthlete()
-  }, [auth])
 
-  const maybeRefreshToken = async () => {
     const now = Math.floor(Date.now() / 1000);
-    if (auth.expiresAt > now) return;
-
-    try {
-      const res = await axios.post('http://localhost:3000/refresh-token', {
-        refresh_token: auth.refreshToken,
-      });
-      console.log('Token refreshed:', res.data);
-      const { access_token, refresh_token, expires_at } = res.data;
-      const newAuth = {
-        accessToken: access_token,
-        refreshToken: refresh_token,
-        expiresAt: expires_at,
-      };
-      setAuth(newAuth);
-      localStorage.setItem('auth', JSON.stringify(newAuth));
-    } catch (err) {
-      console.error('Failed to refresh token:', err);
-      alert('Session expired. Please log in again.');
-      logout();
+    if (auth && auth.expiresAt > now && !athlete) {
+      fetchAthlete();
     }
-  };
-
-
-  const logout = () => {
-    setAuth('');
-    localStorage.removeItem('auth');
-  };
+  }, [auth, athlete]);
 
   const fetchActivities = async () => {
     try {
@@ -125,16 +81,18 @@ function App() {
 
           <div className="flex gap-6 justify-center">
             <div className="justify-center">
-              <ActivityTable activities={activities} setSelectedActivity={setSelectedActivity} selectedActivity={selectedActivity} />
+              <ActivityTable
+                activities={activities}
+                setSelectedActivity={setSelectedActivity}
+                selectedActivity={selectedActivity}
+              />
             </div>
 
-            {/* Activity Detail Panel */}
             {selectedActivity && (
-                <div className="sticky top-6" style={{alignSelf:"flex-start", flexGrow: 1}}>
-                  <ActivityDetail activity={selectedActivity} onClose={() => setSelectedActivity(null)} />
-                </div>
-              )}
-              
+              <div className="sticky top-6" style={{ alignSelf: 'flex-start', flexGrow: 1 }}>
+                <ActivityDetail activity={selectedActivity} onClose={() => setSelectedActivity(null)} />
+              </div>
+            )}
           </div>
         </>
       )}
