@@ -11,7 +11,7 @@ export const fetchActivities = async (accessToken) => {
 };
 
 export const refreshToken = async (refreshToken) => {
-  const res = await axios.post('http://localhost:3000/refresh-token', {
+  const res = await axios.post('/refresh-token', {
     refresh_token: refreshToken,
   });
   return res.data;

@@ -1,25 +1,29 @@
-const express = require('express');
-const axios = require('axios');
-const dotenv = require('dotenv');
-const cors = require('cors');
-dotenv.config()
+import express from 'express';
+import axios from 'axios';
+import dotenv from 'dotenv';
+import cors from 'cors';
+import path from 'path';
+
+dotenv.config();
 
 const app = express();
 const port = 3000;
+const isProduction = process.env.NODE_ENV?.trim() === 'production'.trim();
+console.log(isProduction)
 
 app.use(express.json());
 app.use(cors({
-    origin: 'http://localhost:3001',
+  origin: 'http://localhost:3001',
 }));
 
 // Basic GET endpoint to test server connectivity
 app.get('/ping', (req, res) => {
-    res.send('Server is up and running!');
+  res.send('Server is up and running!');
 });
 
 // Step 1: Redirect user to Strava's authorization page
 app.get('/auth/strava', (req, res) => {
-    console.log('Redirecting to Strava authorization page...');
+    // console.log('Redirecting to Strava authorization page...');
   const redirect_uri = `http://localhost:${port}/auth/strava/callback`;
   res.redirect(
     `https://www.strava.com/oauth/authorize?client_id=${process.env.STRAVA_CLIENT_ID}&response_type=code&redirect_uri=${redirect_uri}&scope=read,activity:read_all`
@@ -43,7 +47,9 @@ app.get('/auth/strava/callback', async (req, res) => {
     const { access_token, athlete, refresh_token, expires_at } = response.data;
     // console.log(access_token, athlete)
     res.redirect(
-        `http://localhost:3001/?token=${access_token}&refresh_token=${refresh_token}&expires_at=${expires_at}`
+        301, 
+        isProduction ? `/?token=${access_token}&refresh_token=${refresh_token}&expires_at=${expires_at}`
+         : `http://localhost:3001/?token=${access_token}&refresh_token=${refresh_token}&expires_at=${expires_at}`
       ) // Redirect to frontend with tokens
   } catch (error) {
     console.error(error.response.data);
@@ -108,6 +114,14 @@ app.get('/api/activities', async (req, res) => {
   }
 });
 
+if (isProduction) {
+  console.log('using prod')
+  app.use(express.static(path.join(import.meta.dirname, 'client/build')));
+
+  app.get('/*fallback', (req, res) => {
+    res.sendFile(path.join(import.meta.dirname, 'client/build', 'index.html'));
+  });
+}
 
 app.listen(port, () => {
   console.log(`Server running at http://localhost:${port}`);
