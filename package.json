@@ -7,7 +7,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "SET NODE_ENV=development && nodemon backend.js",
     "prod": "SET NODE_ENV=production && node backend.js",
-    "start": "node server.js",
+    "start": "node backend.js",
     "build": "cd client && npm install && npm run build"
   },
   "keywords": [],
