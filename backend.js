@@ -9,7 +9,8 @@ dotenv.config();
 const app = express();
 const port = 3000;
 const isProduction = process.env.NODE_ENV?.trim() === 'production'.trim();
-console.log(isProduction)
+
+const REDIRECT_URI = isProduction ? process.env.REDIRECT_URI : `https://localhost:${port}`
 
 app.use(express.json());
 app.use(cors({
@@ -24,7 +25,7 @@ app.get('/ping', (req, res) => {
 // Step 1: Redirect user to Strava's authorization page
 app.get('/auth/strava', (req, res) => {
     // console.log('Redirecting to Strava authorization page...');
-  const redirect_uri = `http://localhost:${port}/auth/strava/callback`;
+  const redirect_uri = `${REDIRECT_URI}/auth/strava/callback`;
   res.redirect(
     `https://www.strava.com/oauth/authorize?client_id=${process.env.STRAVA_CLIENT_ID}&response_type=code&redirect_uri=${redirect_uri}&scope=read,activity:read_all`
   );
