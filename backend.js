@@ -43,7 +43,7 @@ app.get('/auth/strava/callback', async (req, res) => {
     );
 
     const { access_token, athlete, refresh_token, expires_at } = response.data;
-    // console.log(access_token, athlete)
+
     res.redirect(
         301, 
         `${REDIRECT_URI}/?token=${access_token}&refresh_token=${refresh_token}&expires_at=${expires_at}`      ) // Redirect to frontend with tokens
@@ -75,8 +75,7 @@ app.post('/refresh-token', async (req, res) => {
 });
 
 app.get('/api/athlete', async (req, res) => {
-  const accessToken = req.query.access_token; // You got this earlier
-  // console.log(accessToken)
+  const accessToken = req.query.access_token; 
   try {
     const response = await axios.get('https://www.strava.com/api/v3/athlete', {
       headers: {
@@ -85,16 +84,27 @@ app.get('/api/athlete', async (req, res) => {
     });
 
     const athlete = response.data;
-    res.json(athlete); // You can later filter/format this
+    res.json(athlete); 
   } catch (error) {
     console.error(error.response?.data || error.message);
     res.status(500).send('Failed to fetch athlete');
   }
 });
 
+app.post('/logout', async (req, res) => {
+  const accessToken = req.query.access_token;
+  try {
+    const response = await axios.post(`https://www.strava.com/oauth/deauthorize?access_token=${accessToken}`)
+    console.log(response.data)
+    res.redirect(`${REDIRECT_URI}`)
+  } catch (error) {
+    console.error(error.response?.data || error.message);
+    res.status(500).send('Server error');
+  }
+});
+
 app.get('/api/activities', async (req, res) => {
-  const accessToken = req.query.access_token; // You got this earlier
-  // console.log(accessToken)
+  const accessToken = req.query.access_token;
   try {
     const response = await axios.get('https://www.strava.com/api/v3/athlete/activities', {
       headers: {
@@ -103,7 +113,7 @@ app.get('/api/activities', async (req, res) => {
     });
 
     const activities = response.data;
-    res.json(activities); // You can later filter/format this
+    res.json(activities);
   } catch (error) {
     console.error(error.response?.data || error.message);
     res.status(500).send('Failed to fetch activities');

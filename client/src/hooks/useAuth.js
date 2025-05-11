@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { refreshToken as requestRefreshToken } from '../api/api';
+import { refreshToken as requestRefreshToken, logoutBackend } from '../api/api';
 
 export default function useAuth() {
   const [auth, setAuth] = useState(null);
@@ -43,6 +43,7 @@ export default function useAuth() {
     };
 
   const logout = () => {
+    logoutBackend(auth.accessToken)
     setAuth(null);
     localStorage.removeItem('auth');
     localStorage.removeItem('activities');
