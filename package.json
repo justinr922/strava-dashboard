@@ -8,7 +8,7 @@
     "dev": "SET NODE_ENV=development && nodemon backend.js",
     "prod": "SET NODE_ENV=production && node backend.js",
     "start": "node backend.js",
-    "build": "cd client && npm install && npm run build"
+    "build": "npm install && cd client && npm install && npm run build"
   },
   "keywords": [],
   "author": "",
