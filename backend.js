@@ -10,7 +10,7 @@ const app = express();
 const port = 3000;
 const isProduction = process.env.NODE_ENV?.trim() === 'production'.trim();
 
-const REDIRECT_URI = isProduction ? process.env.REDIRECT_URI : `https://localhost:${port}`
+const REDIRECT_URI = process.env.REDIRECT_URI
 
 app.use(express.json());
 app.use(cors({
@@ -49,9 +49,7 @@ app.get('/auth/strava/callback', async (req, res) => {
     // console.log(access_token, athlete)
     res.redirect(
         301, 
-        isProduction ? `/?token=${access_token}&refresh_token=${refresh_token}&expires_at=${expires_at}`
-         : `http://localhost:3001/?token=${access_token}&refresh_token=${refresh_token}&expires_at=${expires_at}`
-      ) // Redirect to frontend with tokens
+        `${REDIRECT_URI}/?token=${access_token}&refresh_token=${refresh_token}&expires_at=${expires_at}`      ) // Redirect to frontend with tokens
   } catch (error) {
     console.error(error.response.data);
     res.status(500).send('Authentication failed.');
