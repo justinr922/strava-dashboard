@@ -10,7 +10,7 @@ import { fetchAthlete as fetchAthleteAPI, fetchActivities as fetchActivitiesAPI 
 import './App.css';
 
 const ACTIVITY_CACHE_TTL = 60 * 60 * 1000 * 24
-
+console.log(process.env.REDIRECT_URI)
 function App() {
   const { auth, maybeRefreshToken, logout } = useAuth();
   const [athlete, setAthlete] = useState(null);
