@@ -23,7 +23,7 @@ export default function ActivityDetail({ activity, onClose }) {
       </div>
       <p><strong>Type:</strong> {activity.type}</p>
       <p><strong>Date:</strong> {new Date(activity.start_date).toLocaleString()}</p>
-      <p><strong>Distance:</strong> {(activity.distance / 1000).toFixed(2)} km</p>
+      <p><strong>Distance:</strong> {(activity.distance / 1609.34).toFixed(2)} miles</p>
       <p><strong>Time:</strong> {Math.round(activity.moving_time / 60)} min</p>
       <p><strong>Pace:</strong> {activity.formattedSpeed}</p>
 
