@@ -8,6 +8,7 @@ const isProduction = process.env.NODE_ENV?.trim() === 'production'.trim();
 const app = express();
 const port = 3000;
 const REDIRECT_URI = process.env.RENDER ? process.env.RENDER_EXTERNAL_URL : process.env.REDIRECT_URI
+console.log(process.env.RENDER, REDIRECT_URI)
 
 app.use(express.json());
 app.use(cors({
