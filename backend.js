@@ -55,7 +55,7 @@ app.get('/ping', (req, res) => {
 
 // Step 1: Redirect user to Strava's authorization page
 app.get('/auth/strava', (req, res) => {
-    console.log('Redirecting to Strava authorization page...');
+    // console.log('Redirecting to Strava authorization page...');
   const redirect_uri = `${REDIRECT_URI}/auth/strava/callback`;
   res.redirect(
     `https://www.strava.com/oauth/authorize?client_id=${process.env.STRAVA_CLIENT_ID}&response_type=code&redirect_uri=${redirect_uri}&scope=read,activity:read_all`
@@ -77,7 +77,7 @@ app.get('/auth/strava/callback', async (req, res) => {
     );
 
     const { access_token, athlete, refresh_token, expires_at } = response.data;
-    console.log('Received tokens from Strava:',code,  response.data);
+    // console.log('Received tokens from Strava:',code,  response.data);
     // Persist Strava tokens server-side keyed by athlete id
     await upsertUserTokens({
       athleteId: athlete.id,
@@ -152,7 +152,7 @@ app.get('/api/activities', requireAppAuth, async (req, res) => {
 });
 
 if (isProduction) {
-  console.log('using prod')
+  // console.log('using prod')
   app.use(express.static(path.join(import.meta.dirname, 'client/build')));
 
   app.get('/*fallback', (req, res) => {
