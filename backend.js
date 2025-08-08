@@ -13,6 +13,8 @@ const port = 3000;
 const REDIRECT_URI = process.env.RENDER ? process.env.RENDER_EXTERNAL_URL : process.env.REDIRECT_URI
 console.log(process.env.RENDER, REDIRECT_URI)
 
+import { initDb } from './server/db.js';
+
 app.use(express.json());
 
 async function refreshStravaTokenIfNeeded(user) {
@@ -28,7 +30,7 @@ async function refreshStravaTokenIfNeeded(user) {
   });
   const response = await axios.post('https://www.strava.com/api/v3/oauth/token', params);
   const { access_token, refresh_token, expires_at } = response.data;
-  upsertUserTokens({
+  await upsertUserTokens({
     athleteId: user.strava_athlete_id,
     accessToken: access_token,
     refreshToken: refresh_token,
@@ -77,7 +79,7 @@ app.get('/auth/strava/callback', async (req, res) => {
     const { access_token, athlete, refresh_token, expires_at } = response.data;
     console.log('Received tokens from Strava:',code,  response.data);
     // Persist Strava tokens server-side keyed by athlete id
-    upsertUserTokens({
+    await upsertUserTokens({
       athleteId: athlete.id,
       accessToken: access_token,
       refreshToken: refresh_token,
@@ -103,7 +105,7 @@ app.post('/refresh-token', requireAppAuth, async (req, res) => {
 app.get('/api/athlete', requireAppAuth, async (req, res) => {
   try {
     // Load user and refresh token if needed
-    let user = getUserByAthleteId(req.auth.athleteId);
+    let user = await getUserByAthleteId(req.auth.athleteId);
     if (!user) return res.status(404).send('User not found');
     user = await refreshStravaTokenIfNeeded(user);
 
@@ -120,11 +122,11 @@ app.get('/api/athlete', requireAppAuth, async (req, res) => {
 
 app.post('/logout', requireAppAuth, async (req, res) => {
   try {
-    const user = getUserByAthleteId(req.auth.athleteId);
+    const user = await getUserByAthleteId(req.auth.athleteId);
     if (user?.strava_access_token) {
       await axios.post(`https://www.strava.com/oauth/deauthorize?access_token=${user.strava_access_token}`);
     }
-    deleteUserByAthleteId(req.auth.athleteId);
+    await deleteUserByAthleteId(req.auth.athleteId);
     res.status(204).send();
   } catch (error) {
     console.error(error.response?.data || error.message);
@@ -134,7 +136,7 @@ app.post('/logout', requireAppAuth, async (req, res) => {
 
 app.get('/api/activities', requireAppAuth, async (req, res) => {
   try {
-    let user = getUserByAthleteId(req.auth.athleteId);
+    let user = await getUserByAthleteId(req.auth.athleteId);
     if (!user) return res.status(404).send('User not found');
     user = await refreshStravaTokenIfNeeded(user);
 
@@ -158,6 +160,15 @@ if (isProduction) {
   });
 }
 
-app.listen(port, () => {
-  console.log(`Server running at ${REDIRECT_URI}`);
-});
+// Initialize DB then start server
+(async () => {
+  try {
+    await initDb();
+    app.listen(port, () => {
+      console.log(`Server running at ${REDIRECT_URI}`);
+    });
+  } catch (e) {
+    console.error('DB init failed', e);
+    process.exit(1);
+  }
+})();
