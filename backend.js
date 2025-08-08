@@ -2,9 +2,8 @@ import express from 'express';
 import axios from 'axios';
 import cors from 'cors';
 import path from 'path';
-import jwt from 'jsonwebtoken';
-import Database from 'better-sqlite3';
-import fs from 'fs';
+import { upsertUserTokens, getUserByAthleteId, deleteUserByAthleteId } from './server/db.js';
+import { signAppToken, requireAppAuth } from './server/auth.js';
 
 
 const isProduction = process.env.NODE_ENV?.trim() === 'production'.trim();
@@ -14,69 +13,6 @@ const port = 3000;
 const REDIRECT_URI = process.env.REDIRECT_URI
 
 app.use(express.json());
-// Database setup for storing Strava tokens
-const DB_PATH = process.env.STRAVA_DB_PATH || './data/strava.db';
-fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
-const db = new Database(DB_PATH);
-db.pragma('journal_mode = WAL');
-db.exec(`
-  CREATE TABLE IF NOT EXISTS users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    strava_athlete_id INTEGER UNIQUE NOT NULL,
-    strava_access_token TEXT,
-    strava_refresh_token TEXT,
-    strava_expires_at INTEGER,
-    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-    updated_at TEXT DEFAULT CURRENT_TIMESTAMP
-  );
-`);
-
-const upsertUserTokens = db.prepare(`
-  INSERT INTO users (strava_athlete_id, strava_access_token, strava_refresh_token, strava_expires_at)
-  VALUES (@athleteId, @accessToken, @refreshToken, @expiresAt)
-  ON CONFLICT(strava_athlete_id) DO UPDATE SET
-    strava_access_token = excluded.strava_access_token,
-    strava_refresh_token = excluded.strava_refresh_token,
-    strava_expires_at = excluded.strava_expires_at,
-    updated_at = CURRENT_TIMESTAMP
-`);
-
-const getUserByAthleteId = db.prepare(`
-  SELECT * FROM users WHERE strava_athlete_id = ?
-`);
-
-const deleteUserByAthleteId = db.prepare(`
-  DELETE FROM users WHERE strava_athlete_id = ?
-`);
-
-function signAppToken(athleteId) {
-  const secret = process.env.APP_JWT_SECRET;
-  if (!secret) throw new Error('APP_JWT_SECRET is not set');
-  return jwt.sign(
-    { sub: String(athleteId), type: 'app', iss: 'strava-dashboard' },
-    secret,
-    { algorithm: 'HS256', expiresIn: '7d' }
-  );
-}
-
-function verifyAppToken(token) {
-  const secret = process.env.APP_JWT_SECRET;
-  if (!secret) throw new Error('APP_JWT_SECRET is not set');
-  return jwt.verify(token, secret, { algorithms: ['HS256'] });
-}
-
-function requireAppAuth(req, res, next) {
-  const hdr = req.headers.authorization || '';
-  const token = hdr.startsWith('Bearer ') ? hdr.slice(7) : null;
-  if (!token) return res.status(401).send('Missing Authorization header');
-  try {
-    const payload = verifyAppToken(token);
-    req.auth = { athleteId: parseInt(payload.sub, 10) };
-    next();
-  } catch (e) {
-    return res.status(401).send('Invalid or expired token');
-  }
-}
 
 async function refreshStravaTokenIfNeeded(user) {
   const now = Math.floor(Date.now() / 1000);
@@ -91,7 +27,7 @@ async function refreshStravaTokenIfNeeded(user) {
   });
   const response = await axios.post('https://www.strava.com/api/v3/oauth/token', params);
   const { access_token, refresh_token, expires_at } = response.data;
-  upsertUserTokens.run({
+  upsertUserTokens({
     athleteId: user.strava_athlete_id,
     accessToken: access_token,
     refreshToken: refresh_token,
@@ -140,7 +76,7 @@ app.get('/auth/strava/callback', async (req, res) => {
     const { access_token, athlete, refresh_token, expires_at } = response.data;
     console.log('Received tokens from Strava:',code,  response.data);
     // Persist Strava tokens server-side keyed by athlete id
-    upsertUserTokens.run({
+    upsertUserTokens({
       athleteId: athlete.id,
       accessToken: access_token,
       refreshToken: refresh_token,
@@ -166,7 +102,7 @@ app.post('/refresh-token', requireAppAuth, async (req, res) => {
 app.get('/api/athlete', requireAppAuth, async (req, res) => {
   try {
     // Load user and refresh token if needed
-    let user = getUserByAthleteId.get(req.auth.athleteId);
+    let user = getUserByAthleteId(req.auth.athleteId);
     if (!user) return res.status(404).send('User not found');
     user = await refreshStravaTokenIfNeeded(user);
 
@@ -183,11 +119,11 @@ app.get('/api/athlete', requireAppAuth, async (req, res) => {
 
 app.post('/logout', requireAppAuth, async (req, res) => {
   try {
-    const user = getUserByAthleteId.get(req.auth.athleteId);
+    const user = getUserByAthleteId(req.auth.athleteId);
     if (user?.strava_access_token) {
       await axios.post(`https://www.strava.com/oauth/deauthorize?access_token=${user.strava_access_token}`);
     }
-    deleteUserByAthleteId.run(req.auth.athleteId);
+    deleteUserByAthleteId(req.auth.athleteId);
     res.status(204).send();
   } catch (error) {
     console.error(error.response?.data || error.message);
@@ -197,7 +133,7 @@ app.post('/logout', requireAppAuth, async (req, res) => {
 
 app.get('/api/activities', requireAppAuth, async (req, res) => {
   try {
-    let user = getUserByAthleteId.get(req.auth.athleteId);
+    let user = getUserByAthleteId(req.auth.athleteId);
     if (!user) return res.status(404).send('User not found');
     user = await refreshStravaTokenIfNeeded(user);
 
