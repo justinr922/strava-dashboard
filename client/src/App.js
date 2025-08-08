@@ -11,7 +11,7 @@ import './App.css';
 
 const ACTIVITY_CACHE_TTL = 60 * 60 * 1000 * 24
 function App() {
-  const { auth, maybeRefreshToken, logout } = useAuth();
+  const { auth, logout } = useAuth();
   const [athlete, setAthlete] = useState(null);
   const [activities, setActivities] = useState(() => {
     const cached = localStorage.getItem('activities');
@@ -28,11 +28,10 @@ function App() {
 
   useEffect(() => {
     const fetchAthleteOnce = async () => {
-      const now = Math.floor(Date.now() / 1000);
-      if (!auth || auth.expiresAt <= now || athlete) return;
-  
+      if (!auth || athlete) return;
+
       try {
-        const data = await fetchAthleteAPI(auth.accessToken); 
+        const data = await fetchAthleteAPI(auth.appToken);
         setAthlete(data);
       } catch (err) {
         console.error('Error fetching athlete:', err);
@@ -45,8 +44,7 @@ function App() {
 
   const fetchActivities = async () => {
     try {
-      await maybeRefreshToken();
-      const data = await fetchActivitiesAPI(auth.accessToken);
+      const data = await fetchActivitiesAPI(auth.appToken);
       setActivities(data);
       localStorage.setItem('activities', JSON.stringify(data));
       localStorage.setItem('activities_cached_at', Date.now().toString());
