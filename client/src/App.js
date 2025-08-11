@@ -76,7 +76,7 @@ function App() {
           <>
             <HeaderBar athlete={athlete} onFetch={fetchActivities} onLogout={logout} />
             <Routes>
-              <Route path="/" element={<ProfilePage athlete={athlete} />} />
+              <Route path="/" element={<ProfilePage athlete={athlete} activities={activities} />} />
               <Route
                 path="/history"
                 element={
