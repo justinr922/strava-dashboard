@@ -1,11 +1,12 @@
 import React, { useEffect, useState } from 'react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 
 import HeaderBar from './components/HeaderBar';
-import ActivityTable from './components/ActivityTable';
-import ActivityDetail from './components/ActivityDetail';
-
 import useAuth from './hooks/useAuth';
 import { fetchAthlete as fetchAthleteAPI, fetchActivities as fetchActivitiesAPI } from './api/api';
+
+import ProfilePage from './pages/ProfilePage';
+import HistoryPage from './pages/HistoryPage';
 
 import './App.css';
 
@@ -37,10 +38,10 @@ function App() {
         console.error('Error fetching athlete:', err);
       }
     };
-  
+
     fetchAthleteOnce();
   }, [auth, athlete]);
-  
+
 
   const fetchActivities = async () => {
     try {
@@ -55,43 +56,43 @@ function App() {
   };
 
   return (
-    <div className="p-8 bg-gray-100 min-h-screen">
-      <h1 className="text-3xl font-bold mb-6 text-center text-gray-800">
-        Strava Activity Analysis
-      </h1>
+    <BrowserRouter>
+      <div className="p-8 bg-gray-100 min-h-screen">
+        <h1 className="text-3xl font-bold mb-6 text-center text-gray-800">
+          Strava Activity Analysis
+        </h1>
 
-      {!auth && (
-        <div className="flex justify-center">
-          <a href="/auth/strava">
-            <button className="bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 px-4 rounded shadow">
-              Connect with Strava
-            </button>
-          </a>
-        </div>
-      )}
-
-      {auth && (
-        <>
-          <HeaderBar athlete={athlete} onFetch={fetchActivities} onLogout={logout} />
-
-          <div className="flex gap-6 justify-center">
-            <div className="justify-center">
-              <ActivityTable
-                activities={activities}
-                setSelectedActivity={setSelectedActivity}
-                selectedActivity={selectedActivity}
-              />
-            </div>
-
-            {selectedActivity && (
-              <div className="sticky top-6" style={{ alignSelf: 'flex-start', flexGrow: 1 }}>
-                <ActivityDetail activity={selectedActivity} onClose={() => setSelectedActivity(null)} />
-              </div>
-            )}
+        {!auth && (
+          <div className="flex justify-center">
+            <a href="/auth/strava">
+              <button className="bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 px-4 rounded shadow">
+                Connect with Strava
+              </button>
+            </a>
           </div>
-        </>
-      )}
-    </div>
+        )}
+
+        {auth && (
+          <>
+            <HeaderBar athlete={athlete} onFetch={fetchActivities} onLogout={logout} />
+            <Routes>
+              <Route path="/" element={<ProfilePage athlete={athlete} />} />
+              <Route
+                path="/history"
+                element={
+                  <HistoryPage
+                    activities={activities}
+                    selectedActivity={selectedActivity}
+                    setSelectedActivity={setSelectedActivity}
+                  />
+                }
+              />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </>
+        )}
+      </div>
+    </BrowserRouter>
   );
 }
 

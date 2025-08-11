@@ -10,8 +10,8 @@ const isProduction = process.env.NODE_ENV?.trim() === 'production'.trim();
 
 const app = express();
 const port = 3000;
-const REDIRECT_URI = process.env.RENDER ? process.env.RENDER_EXTERNAL_URL : process.env.REDIRECT_URI
-console.log(process.env.RENDER, REDIRECT_URI)
+const REDIRECT_URI = process.env.RENDER !== 'false' && process.env.RENDER ? process.env.RENDER_EXTERNAL_URL : process.env.REDIRECT_URI
+// console.log(process.env.RENDER, process.env.REDIRECT_URI, REDIRECT_URI)
 
 import { initDb } from './server/db.js';
 
@@ -55,7 +55,7 @@ app.get('/ping', (req, res) => {
 
 // Step 1: Redirect user to Strava's authorization page
 app.get('/auth/strava', (req, res) => {
-    // console.log('Redirecting to Strava authorization page...');
+    console.log('Redirecting to Strava authorization page...');
   const redirect_uri = `${REDIRECT_URI}/auth/strava/callback`;
   res.redirect(
     `https://www.strava.com/oauth/authorize?client_id=${process.env.STRAVA_CLIENT_ID}&response_type=code&redirect_uri=${redirect_uri}&scope=read,activity:read_all`
@@ -155,7 +155,8 @@ if (isProduction) {
   // console.log('using prod')
   app.use(express.static(path.join(import.meta.dirname, 'client/build')));
 
-  app.get('/*fallback', (req, res) => {
+  // SPA fallback for client-side routing (Express 5): use a RegExp catch-all
+  app.get(/.*/, (req, res) => {
     res.sendFile(path.join(import.meta.dirname, 'client/build', 'index.html'));
   });
 }
