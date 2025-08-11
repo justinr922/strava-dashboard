@@ -61,8 +61,11 @@ function App() {
         {!auth && (
           <div className="flex justify-center">
             <h1 className="text-3xl font-bold mb-6 text-center text-gray-800">
-              Strava Activity Analysis
+              Straviewer
             </h1>
+            <p className="text-lg text-center text-gray-600 mb-6">
+              Visualize your Strava activities.
+            </p>
             <a href="/auth/strava">
               <button className="bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 px-4 rounded shadow">
                 Connect with Strava

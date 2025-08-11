@@ -5,7 +5,7 @@ const HeaderBar = ({ athlete, onFetch, onLogout }) => (
   <header className="sticky top-0 z-10 bg-white/80 backdrop-blur border-b mb-6">
     <div className="mx-auto max-w-6xl px-4 py-2 flex items-center justify-between">
       {/* Left: Title */}
-      <div className="text-lg font-semibold">Strava Activity Analysis</div>
+      <div className="text-lg font-semibold">Straviewer</div>
 
       {/* Center: Tabs */}
       <nav className="flex gap-1">
@@ -32,7 +32,8 @@ const HeaderBar = ({ athlete, onFetch, onLogout }) => (
           className="p-2 rounded-md text-gray-600 hover:bg-gray-100"
           title="Refresh"
         >
-          Fetch Activities
+          <span className="sm:hidden">⟳</span>
+          <span className="hidden sm:inline">Fetch Activities</span>
         </button>
         <details className="relative">
           <summary className="flex items-center gap-2 cursor-pointer list-none">

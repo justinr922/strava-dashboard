@@ -28,19 +28,22 @@ export default function ActivityDetail({ activity, onClose }) {
       <p><strong>Pace:</strong> {activity.formattedSpeed}</p>
 
       {activity?.map?.summary_polyline && (
-        <MapContainer
-            style={{ height: '300px', width: '100%', borderRadius: '0.75rem' }}
-            center={latlngs[0]}
-            zoom={13}
-            scrollWheelZoom={false}
-        >
-            <TileLayer
-            attribution='&copy; OpenStreetMap contributors'
-            url='https://basemap.nationalmap.gov/arcgis/rest/services/USGSTopo/MapServer/tile/{z}/{y}/{x}'
-            maxZoom={20}
-            />
-            <Polyline positions={latlngs} color="blue" weight={4} />
-      </MapContainer>)}
+        <div className="h-48 sm:h-72 w-full rounded-xl overflow-hidden">
+          <MapContainer
+              style={{ height: '100%', width: '100%' }}
+              center={latlngs[0]}
+              zoom={13}
+              scrollWheelZoom={false}
+          >
+              <TileLayer
+              attribution='&copy; OpenStreetMap contributors'
+              url='https://basemap.nationalmap.gov/arcgis/rest/services/USGSTopo/MapServer/tile/{z}/{y}/{x}'
+              maxZoom={20}
+              />
+              <Polyline positions={latlngs} color="blue" weight={4} />
+          </MapContainer>
+        </div>
+      )}
     </div>
   );
 }

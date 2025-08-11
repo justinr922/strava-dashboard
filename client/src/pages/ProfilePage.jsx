@@ -14,9 +14,9 @@ export default function ProfilePage({ athlete, activities = [] }) {
     : 0;
 
   return (
-    <div className="flex justify-center">
+    <div className="px-3 sm:px-6 flex justify-center">
       <div className="max-w-3xl w-full space-y-6">
-        <h2 className="text-2xl font-semibold">Profile</h2>
+        <h2 className="text-xl sm:text-2xl font-semibold">Profile</h2>
         <AthleteProfile athlete={athlete} />
 
         <div className="bg-white rounded-xl shadow p-6">
