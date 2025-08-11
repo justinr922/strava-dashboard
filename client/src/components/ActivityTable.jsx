@@ -29,6 +29,11 @@ const ActivityTable = ({ activities, setSelectedActivity, selectedActivity }) =>
       formattedSpeed: formatSpeed(act.average_speed, act.type),
     });
 
+  const goToActivity = (id) => {
+    // Navigate using full page location to avoid adding dependency here; router handles it
+    window.location.assign(`/activities/${id}`);
+  };
+
   return (
     <div className="w-full">
       {/* Mobile cards */}
@@ -47,6 +52,10 @@ const ActivityTable = ({ activities, setSelectedActivity, selectedActivity }) =>
             </div>
             <div className="mt-1 text-sm text-gray-600">
               {act.type} • {(act.distance / 1609.34).toFixed(1)} mi • {(act.moving_time / 60).toFixed(0)} min • {formatSpeed(act.average_speed, act.type)}
+            </div>
+            <div className="mt-3 flex gap-2">
+              <button type="button" onClick={(e) => { e.stopPropagation(); goToActivity(act.id); }}
+                className="text-blue-600 text-sm hover:underline">Open</button>
             </div>
           </button>
         ))}
@@ -71,16 +80,24 @@ const ActivityTable = ({ activities, setSelectedActivity, selectedActivity }) =>
             {activities.map((act) => (
               <tr
                 key={act.id}
-                className={`rounded-xl shadow p-4 cursor-pointer transition ${
+                className={`rounded-xl shadow p-4 transition ${
                   selectedActivity?.id === act.id
                     ? 'bg-blue-100 border-2 border-blue-500'
                     : 'bg-white hover:bg-blue-50'
                 }`}
-                onClick={() => onCardClick(act)}
                 style={{ cursor: 'pointer' }}
               >
                 <td className="px-4 py-2 border-b">{act.start_date_local.slice(0, 10)}</td>
-                <td className="px-4 py-2 border-b">{act.name}</td>
+                <td className="px-4 py-2 border-b">
+                  <div className="flex items-center justify-between">
+                    <span onClick={() => onCardClick(act)} className="hover:underline">
+                      {act.name}
+                    </span>
+                    <button type="button" onClick={() => goToActivity(act.id)} className="text-blue-600 text-sm hover:underline">
+                      Open
+                    </button>
+                  </div>
+                </td>
                 <td className="px-4 py-2 border-b">{act.type}</td>
                 <td className="px-4 py-2 border-b">{(act.distance / 1609.34).toFixed(2)}</td>
                 <td className="px-4 py-2 border-b">{(act.moving_time / 60).toFixed(1)}</td>

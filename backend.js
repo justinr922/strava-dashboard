@@ -151,6 +151,51 @@ app.get('/api/activities', requireAppAuth, async (req, res) => {
   }
 });
 
+// Fetch a single activity by ID
+app.get('/api/activities/:id', requireAppAuth, async (req, res) => {
+  try {
+    const id = req.params.id;
+    let user = await getUserByAthleteId(req.auth.athleteId);
+    if (!user) return res.status(404).send('User not found');
+    user = await refreshStravaTokenIfNeeded(user);
+
+    const response = await axios.get(`https://www.strava.com/api/v3/activities/${id}`, {
+      headers: { Authorization: `Bearer ${user.strava_access_token}` },
+      params: { include_all_efforts: false },
+    });
+
+    res.json(response.data);
+  } catch (error) {
+    console.error(error.response?.data || error.message);
+    res.status(500).send('Failed to fetch activity');
+  }
+});
+
+// Fetch streams for a single activity by ID
+app.get('/api/activities/:id/streams', requireAppAuth, async (req, res) => {
+  try {
+    const id = req.params.id;
+    let user = await getUserByAthleteId(req.auth.athleteId);
+    if (!user) return res.status(404).send('User not found');
+    user = await refreshStravaTokenIfNeeded(user);
+
+    const params = new URLSearchParams({
+      keys: 'latlng,altitude,velocity_smooth,heartrate,cadence,time',
+      key_by_type: 'true',
+    }).toString();
+
+    const response = await axios.get(`https://www.strava.com/api/v3/activities/${id}/streams?${params}`, {
+      headers: { Authorization: `Bearer ${user.strava_access_token}` },
+    });
+
+    res.json(response.data);
+  } catch (error) {
+    console.error(error.response?.data || error.message);
+    res.status(500).send('Failed to fetch activity streams');
+  }
+});
+
+
 if (isProduction) {
   // console.log('using prod')
   app.use(express.static(path.join(import.meta.dirname, 'client/build')));

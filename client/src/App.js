@@ -7,6 +7,7 @@ import { fetchAthlete as fetchAthleteAPI, fetchActivities as fetchActivitiesAPI 
 
 import ProfilePage from './pages/ProfilePage';
 import HistoryPage from './pages/HistoryPage';
+import ActivityPage from './pages/ActivityPage';
 
 import './App.css';
 
@@ -90,6 +91,7 @@ function App() {
                   />
                 }
               />
+              <Route path="/activities/:id" element={<ActivityPage />} />
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </>

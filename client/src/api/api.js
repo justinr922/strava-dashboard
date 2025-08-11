@@ -15,3 +15,13 @@ export const fetchActivities = async (appToken) => {
 export const logoutBackend = async (appToken) => {
   await axios.post('/logout', null, authHeader(appToken));
 };
+
+export const fetchActivityById = async (appToken, id) => {
+  const res = await axios.get(`/api/activities/${id}`, authHeader(appToken));
+  return res.data;
+};
+
+export const fetchActivityStreams = async (appToken, id) => {
+  const res = await axios.get(`/api/activities/${id}/streams`, authHeader(appToken));
+  return res.data;
+};
