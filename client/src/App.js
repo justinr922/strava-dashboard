@@ -60,17 +60,18 @@ function App() {
       <div className="p-8 bg-gray-100 min-h-screen">
         {!auth && (
           <div className="flex justify-center">
-            <h1 className="text-3xl font-bold mb-6 text-center text-gray-800">
-              Straviewer
-            </h1>
-            <p className="text-lg text-center text-gray-600 mb-6">
-              Visualize your Strava activities.
-            </p>
-            <a href="/auth/strava">
-              <button className="bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 px-4 rounded shadow">
-                Connect with Strava
-              </button>
-            </a>
+            <div className="max-w-xl w-full mt-16 px-4">
+              <div className="bg-white rounded-xl shadow border text-center p-6 sm:p-8">
+                <h1 className="text-3xl font-bold text-gray-800 mb-2">Straviewer</h1>
+                <p className="text-lg text-gray-600 mb-6">Visualize your Strava activities.</p>
+                <a href="/auth/strava">
+                  <button className="bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 px-4 rounded shadow">
+                    Connect with Strava
+                  </button>
+                </a>
+                <p className="text-sm text-gray-500 mt-3">You’ll be redirected to Strava to grant read access to your profile and activities. You can revoke access at any time from your Strava settings.</p>
+              </div>
+            </div>
           </div>
         )}
 
