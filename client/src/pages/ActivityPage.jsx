@@ -2,32 +2,88 @@ import { useEffect, useMemo, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import useAuth from '../hooks/useAuth';
 import { fetchActivityById, fetchActivityStreams } from '../api/api';
-import { MapContainer, TileLayer, Polyline } from 'react-leaflet';
+import { MapContainer, TileLayer, Polyline, Tooltip } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 
-// Tiny inline SVG line chart component
-function MiniLineChart({ series, width = 600, height = 200, stroke = '#2563eb' }) {
-  // series: array of numbers
-  const path = useMemo(() => {
-    if (!series || series.length === 0) return '';
-    const w = width;
-    const h = height;
-    const min = Math.min(...series);
-    const max = Math.max(...series);
-    const range = max - min || 1;
-    const stepX = w / Math.max(1, series.length - 1);
-    const points = series.map((v, i) => {
-      const x = i * stepX;
-      const y = h - ((v - min) / range) * h; // invert y for SVG
-      return `${x},${y}`;
+function formatSeconds(total) {
+  if (total == null) return '';
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const s = Math.floor(total % 60);
+  if (h > 0) return `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  return `${m}:${String(s).padStart(2,'0')}`;
+}
+
+// Inline SVG line chart with time-based X axis and hover tooltip
+function MiniLineChart({ x = [], y = [], width = 600, height = 200, stroke = '#2563eb', valueFormatter = (v)=>String(v) }) {
+  const { xs, ys, points, minX, maxX } = useMemo(() => {
+    if (!y || y.length === 0) return { xs: [], ys: [], points: [], minX:0, maxX:0 };
+    const n = Math.min(x?.length || y.length, y.length);
+    const xs0 = x && x.length ? x.slice(0, n) : Array.from({ length: n }, (_, i) => i);
+    const ys0 = y.slice(0, n);
+    // filter out non-finite y while keeping x aligned
+    const xs = [], ys = [];
+    for (let i = 0; i < ys0.length; i++) {
+      if (Number.isFinite(ys0[i])) { xs.push(xs0[i]); ys.push(ys0[i]); }
+    }
+    if (ys.length === 0) return { xs: [], ys: [], points: [], minX:0, maxX:0 };
+    const w = width, h = height;
+    const minY = Math.min(...ys), maxY = Math.max(...ys); const rangeY = maxY - minY || 1;
+    const minX = Math.min(...xs), maxX = Math.max(...xs); const rangeX = maxX - minX || 1;
+    const points = ys.map((v, i) => {
+      const xPos = ((xs[i] - minX) / rangeX) * w;
+      const yPos = h - ((v - minY) / rangeY) * h;
+      return { x: xPos, y: yPos };
     });
-    return `M ${points[0]} L ${points.slice(1).join(' ')}`;
-  }, [series, width, height]);
+    return { xs, ys, points, minX, maxX };
+  }, [x, y, width, height]);
+
+  const path = useMemo(() => {
+    if (!points.length) return '';
+    return `M ${points[0].x},${points[0].y} L ${points.slice(1).map(p=>`${p.x},${p.y}`).join(' ')}`;
+  }, [points]);
+
+  const [hover, setHover] = useState(null); // { i, px, py }
+
+  const onMove = (e) => {
+    if (!points.length) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const px = e.clientX - rect.left;
+    // find nearest x
+    let nearest = 0, best = Infinity;
+    for (let i = 0; i < points.length; i++) {
+      const d = Math.abs(points[i].x - px);
+      if (d < best) { best = d; nearest = i; }
+    }
+    setHover({ i: nearest, px: points[nearest].x, py: points[nearest].y });
+  };
+
+  const onLeave = () => setHover(null);
 
   return (
-    <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-48">
-      <path d={path} fill="none" stroke={stroke} strokeWidth="2" />
-    </svg>
+    <div>
+      <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-48" onMouseMove={onMove} onMouseLeave={onLeave}>
+        <path d={path} fill="none" stroke={stroke} strokeWidth="2" />
+        {hover && (
+          <g>
+            <line x1={hover.px} y1={0} x2={hover.px} y2={height} stroke="#9ca3af" strokeDasharray="4 4" />
+            <circle cx={hover.px} cy={hover.py} r={3} fill={stroke} />
+            {/* Tooltip */}
+            <g transform={`translate(${Math.min(Math.max(hover.px + 8, 0), width - 120)}, ${Math.max(hover.py - 28, 8)})`}>
+              <rect width="120" height="24" rx="4" fill="white" stroke="#e5e7eb" />
+              <text x="6" y="16" fontSize="11" fill="#111827">
+                {formatSeconds(xs[hover.i])} • {valueFormatter(ys[hover.i])}
+              </text>
+            </g>
+          </g>
+        )}
+      </svg>
+      <div className="mt-1 text-xs text-gray-500 flex justify-between">
+        <span>{formatSeconds(minX)}</span>
+        <span>{formatSeconds(Math.round(minX + (maxX - minX)/2))}</span>
+        <span>{formatSeconds(maxX)}</span>
+      </div>
+    </div>
   );
 }
 
@@ -44,6 +100,7 @@ export default function ActivityPage() {
   const { auth } = useAuth();
   const [activity, setActivity] = useState(null);
   const [streams, setStreams] = useState(null);
+  const [metric, setMetric] = useState('heartrate');
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -69,17 +126,23 @@ export default function ActivityPage() {
   }, [auth?.appToken, id]);
 
   const hr = streams?.heartrate?.data;
-  const speed = streams?.velocity_smooth?.data;
-  const time = streams?.time?.data;
+  const speed = streams?.velocity_smooth?.data; // m/s
   const latlng = streams?.latlng?.data;
 
-  // For map coloring
-  const hrStats = useMemo(() => {
-    if (!hr || hr.length === 0) return null;
-    const min = Math.min(...hr);
-    const max = Math.max(...hr);
-    return { min, max };
-  }, [hr]);
+  // choose series for chart by metric; convert speed units based on activity type
+  const isRun = activity?.type === 'Run';
+  const chartSeries = metric === 'heartrate' ? hr : (
+    isRun
+      ? (speed?.map(v => v > 0 ? (1609.34 / (v * 60)) : NaN) ?? null) // min/mi
+      : (speed?.map(v => v * 2.23694) ?? null) // mph
+  );
+
+  // For map coloring — derive min/max based on chosen metric
+  const colorStats = useMemo(() => {
+    const series = chartSeries;
+    if (!series || series.length === 0) return null;
+    return { min: Math.min(...series), max: Math.max(...series) };
+  }, [chartSeries]);
 
   // Downsample for performance (aim ~1000 segments)
   const coloredSegments = useMemo(() => {
@@ -91,11 +154,12 @@ export default function ActivityPage() {
     for (let i = 0; i < n - 1; i += step) {
       const p1 = latlng[i];
       const p2 = latlng[Math.min(i + step, n - 1)];
-      const color = hrStats ? hrColor(hr?.[i], hrStats.min, hrStats.max) : '#3b82f6';
-      segments.push({ p1: { lat: p1[0], lng: p1[1] }, p2: { lat: p2[0], lng: p2[1] }, color });
+      const val = chartSeries?.[i];
+      const color = colorStats ? hrColor(val, colorStats.min, colorStats.max) : '#3b82f6';
+      segments.push({ p1: { lat: p1[0], lng: p1[1] }, p2: { lat: p2[0], lng: p2[1] }, color, val });
     }
     return segments;
-  }, [latlng, hr, hrStats]);
+  }, [latlng, chartSeries, colorStats]);
 
   if (!auth) return (
     <div className="p-6 text-center text-gray-600">Please log in.</div>
@@ -128,35 +192,67 @@ export default function ActivityPage() {
         </div>
 
         <div className="bg-white rounded-xl shadow p-4">
-          <h2 className="font-semibold mb-2">{hr ? 'Heart Rate' : 'Speed'} vs Time</h2>
-          {hr || speed ? (
-            <MiniLineChart series={(hr || speed)} />
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="font-semibold">{metric === 'heartrate' ? 'Heart Rate' : 'Speed'} vs Time</h2>
+            <select value={metric} onChange={(e) => setMetric(e.target.value)} className="text-sm border rounded px-2 py-1">
+              <option value="heartrate">Heart Rate</option>
+              <option value="speed">Speed</option>
+            </select>
+          </div>
+          {chartSeries ? (
+            <MiniLineChart x={streams?.time?.data} y={chartSeries} />
           ) : (
-            <div className="text-gray-500 text-sm">No HR or speed stream available.</div>
+            <div className="text-gray-500 text-sm">No {metric === 'heartrate' ? 'HR' : 'speed'} stream available.</div>
           )}
         </div>
       </div>
 
       <div className="bg-white rounded-xl shadow p-4">
-        <h2 className="font-semibold mb-2">Route {hr ? '(colored by HR)' : ''}</h2>
+        <div className="flex items-center justify-between mb-2">
+          <h2 className="font-semibold">Route (colored by {metric === 'heartrate' ? 'HR' : 'speed'})</h2>
+          <select value={metric} onChange={(e) => setMetric(e.target.value)} className="text-sm border rounded px-2 py-1">
+            <option value="heartrate">Heart Rate</option>
+            <option value="speed">Speed</option>
+          </select>
+        </div>
         {!latlng ? (
           <div className="text-gray-500 text-sm">No route stream available.</div>
         ) : (
-          <MapContainer
-            style={{ height: '320px', width: '100%', borderRadius: '0.75rem' }}
-            center={{ lat: latlng[0][0], lng: latlng[0][1] }}
-            zoom={13}
-            scrollWheelZoom={false}
-          >
-            <TileLayer
-              attribution='&copy; OpenStreetMap contributors'
-              url='https://basemap.nationalmap.gov/arcgis/rest/services/USGSTopo/MapServer/tile/{z}/{y}/{x}'
-              maxZoom={20}
-            />
-            {coloredSegments.map((seg, idx) => (
-              <Polyline key={idx} positions={[seg.p1, seg.p2]} color={seg.color} weight={4} />
-            ))}
-          </MapContainer>
+          <div>
+            <MapContainer
+              style={{ height: '320px', width: '100%', borderRadius: '0.75rem' }}
+              center={{ lat: latlng[0][0], lng: latlng[0][1] }}
+              zoom={13}
+              scrollWheelZoom={false}
+            >
+              <TileLayer
+                attribution='&copy; OpenStreetMap contributors'
+                url='https://basemap.nationalmap.gov/arcgis/rest/services/USGSTopo/MapServer/tile/{z}/{y}/{x}'
+                maxZoom={20}
+              />
+              {/* full route outline for continuity */}
+              <Polyline positions={latlng.map(([a,b]) => ({ lat:a, lng:b }))} color="#94a3b8" weight={2} opacity={0.6} />
+              {coloredSegments.map((seg, idx) => (
+                <Polyline key={idx} positions={[seg.p1, seg.p2]} color={seg.color} weight={4}>
+                  <Tooltip direction="top" offset={[0, -8]} opacity={1} permanent={false}>
+                    <div className="text-xs">
+                      {metric === 'heartrate' ? `${Math.round(seg.val)} bpm` : `${seg.val?.toFixed?.(1) ?? seg.val} ${isRun ? 'min/mi' : 'mph'}`}
+                    </div>
+                  </Tooltip>
+                </Polyline>
+              ))}
+            </MapContainer>
+            {colorStats && (
+              <div className="mt-2 text-xs text-gray-600 flex items-center gap-2">
+                <span>Legend:</span>
+                <span className="inline-block w-3 h-3 rounded" style={{ background: 'hsl(210,85%,50%)' }} />
+                <span>{Math.round(colorStats.min)}{metric==='heartrate'?' bpm':' '}{isRun ? 'min/mi' : 'mph'}</span>
+                <div className="h-2 w-24 bg-gradient-to-r from-[hsl(210,85%,50%)] to-[hsl(0,85%,50%)] rounded" />
+                <span>{Math.round(colorStats.max)}{metric==='heartrate'?' bpm':' '}{isRun ? 'min/mi' : 'mph'}</span>
+                <span className="inline-block w-3 h-3 rounded" style={{ background: 'hsl(0,85%,50%)' }} />
+              </div>
+            )}
+          </div>
         )}
       </div>
     </div>
