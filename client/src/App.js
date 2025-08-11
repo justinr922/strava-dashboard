@@ -58,12 +58,11 @@ function App() {
   return (
     <BrowserRouter>
       <div className="p-8 bg-gray-100 min-h-screen">
-        <h1 className="text-3xl font-bold mb-6 text-center text-gray-800">
-          Strava Activity Analysis
-        </h1>
-
         {!auth && (
           <div className="flex justify-center">
+            <h1 className="text-3xl font-bold mb-6 text-center text-gray-800">
+              Strava Activity Analysis
+            </h1>
             <a href="/auth/strava">
               <button className="bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 px-4 rounded shadow">
                 Connect with Strava
