@@ -13,6 +13,11 @@ export default function ProfilePage({ athlete, activities = [] }) {
     ? Math.round(activities.reduce((sum, a) => sum + (a?.moving_time || 0), 0) / 60)
     : 0;
 
+  // Compute earliest and latest activity start times (prefer start_date, fallback to start_date_local)
+  const times = hasData ? activities.map(a => new Date(a.start_date || a.start_date_local).getTime()) : [];
+  const earliest = hasData && times.length ? new Date(Math.min(...times)) : null;
+  const latest = hasData && times.length ? new Date(Math.max(...times)) : null;
+
   return (
     <div className="px-3 sm:px-6 flex justify-center">
       <div className="max-w-3xl w-full space-y-6">
@@ -38,8 +43,18 @@ export default function ProfilePage({ athlete, activities = [] }) {
                 <div className="text-2xl font-bold">{totalMovingMinutes} min</div>
               </div>
               <div className="p-4 bg-gray-50 rounded-lg">
-                <div className="text-sm text-gray-500">Last Fetch</div>
-                <div className="text-2xl font-bold text-gray-800">{lastFetch || '—'}</div>
+                <div className="text-sm text-gray-500">Activity Range</div>
+                <div className="text-sm text-gray-700">
+                  {earliest && latest ? (
+                    <>
+                      <div><span className="text-gray-500">Earliest:</span> {earliest.toLocaleString()}</div>
+                      <div><span className="text-gray-500">Latest:</span> {latest.toLocaleString()}</div>
+                      <div className="text-xs text-gray-500 mt-1">Last fetch: {lastFetch || '—'}</div>
+                    </>
+                  ) : (
+                    <div className="text-gray-500">—</div>
+                  )}
+                </div>
               </div>
             </div>
           )}
