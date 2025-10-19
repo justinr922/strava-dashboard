@@ -15,7 +15,7 @@ function formatSeconds(total) {
 }
 
 // Inline SVG line chart with time-based X axis and hover tooltip
-function MiniLineChart({ x = [], y = [], width = 600, height = 200, stroke = '#2563eb', valueFormatter = (v)=>String(v) }) {
+function MiniLineChart({ x = [], y = [], width = 600, height = 200, stroke = '#2563eb', valueFormatter = (v)=>String(v), invertY = false }) {
   const { xs, ys, points, minX, maxX } = useMemo(() => {
     if (!y || y.length === 0) return { xs: [], ys: [], points: [], minX:0, maxX:0 };
     const n = Math.min(x?.length || y.length, y.length);
@@ -45,11 +45,14 @@ function MiniLineChart({ x = [], y = [], width = 600, height = 200, stroke = '#2
     const minX = Math.min(...xs), maxX = Math.max(...xs); const rangeX = maxX - minX || 1;
     const points = ys.map((v, i) => {
       const xPos = ((xs[i] - minX) / rangeX) * w;
-      const yPos = h - ((v - minY) / rangeY) * h;
+      // For pace (min/mi), invert Y so faster times (lower values) appear higher
+      const yPos = invertY
+        ? ((v - minY) / rangeY) * h  // inverted: lower values = higher on chart
+        : h - ((v - minY) / rangeY) * h;  // normal: higher values = higher on chart
       return { x: xPos, y: yPos };
     });
     return { xs, ys, points, minX, maxX };
-  }, [x, y, width, height]);
+  }, [x, y, width, height, invertY]);
 
   const path = useMemo(() => {
     if (!points.length) return '';
@@ -230,7 +233,7 @@ export default function ActivityPage() {
             </select>
           </div>
           {chartSeries ? (
-            <MiniLineChart x={streams?.time?.data} y={chartSeries} />
+            <MiniLineChart x={streams?.time?.data} y={chartSeries} invertY={metric === 'speed' && isRun} />
           ) : (
             <div className="text-gray-500 text-sm">No {metric === 'heartrate' ? 'HR' : 'speed'} stream available.</div>
           )}
