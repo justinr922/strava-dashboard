@@ -21,11 +21,24 @@ function MiniLineChart({ x = [], y = [], width = 600, height = 200, stroke = '#2
     const n = Math.min(x?.length || y.length, y.length);
     const xs0 = x && x.length ? x.slice(0, n) : Array.from({ length: n }, (_, i) => i);
     const ys0 = y.slice(0, n);
-    // filter out non-finite y while keeping x aligned
+
+    // filter out non-finite y and detect gaps in time (pauses)
     const xs = [], ys = [];
+    let lastTime = null;
     for (let i = 0; i < ys0.length; i++) {
-      if (Number.isFinite(ys0[i])) { xs.push(xs0[i]); ys.push(ys0[i]); }
+      if (Number.isFinite(ys0[i])) {
+        const currentTime = xs0[i];
+        // skip if there's a large gap (>120 seconds) indicating a pause
+        if (lastTime !== null && currentTime - lastTime > 120) {
+          // don't add this point to create a visual gap
+          continue;
+        }
+        xs.push(currentTime);
+        ys.push(ys0[i]);
+        lastTime = currentTime;
+      }
     }
+
     if (ys.length === 0) return { xs: [], ys: [], points: [], minX:0, maxX:0 };
     const w = width, h = height;
     const minY = Math.min(...ys), maxY = Math.max(...ys); const rangeY = maxY - minY || 1;
@@ -40,8 +53,20 @@ function MiniLineChart({ x = [], y = [], width = 600, height = 200, stroke = '#2
 
   const path = useMemo(() => {
     if (!points.length) return '';
-    return `M ${points[0].x},${points[0].y} L ${points.slice(1).map(p=>`${p.x},${p.y}`).join(' ')}`;
-  }, [points]);
+    // create path with potential breaks for gaps
+    let pathStr = `M ${points[0].x},${points[0].y}`;
+    for (let i = 1; i < points.length; i++) {
+      const prevTime = xs[i-1];
+      const currTime = xs[i];
+      // if there's a gap in time, move to the new point instead of drawing a line
+      if (currTime - prevTime > 120) {
+        pathStr += ` M ${points[i].x},${points[i].y}`;
+      } else {
+        pathStr += ` L ${points[i].x},${points[i].y}`;
+      }
+    }
+    return pathStr;
+  }, [points, xs]);
 
   const [hover, setHover] = useState(null); // { i, px, py }
 
@@ -220,6 +245,7 @@ export default function ActivityPage() {
         ) : (
           <div>
             <MapContainer
+              key={`${metric}-${coloredSegments.length}`}
               style={{ height: '320px', width: '100%', borderRadius: '0.75rem' }}
               center={{ lat: latlng[0][0], lng: latlng[0][1] }}
               zoom={13}
@@ -233,7 +259,7 @@ export default function ActivityPage() {
               {/* full route outline for continuity */}
               <Polyline positions={latlng.map(([a,b]) => ({ lat:a, lng:b }))} color="#94a3b8" weight={2} opacity={0.6} />
               {coloredSegments.map((seg, idx) => (
-                <Polyline key={idx} positions={[seg.p1, seg.p2]} color={seg.color} weight={4}>
+                <Polyline key={`${metric}-${idx}`} positions={[seg.p1, seg.p2]} color={seg.color} weight={4}>
                   <Tooltip direction="top" offset={[0, -8]} opacity={1} permanent={false}>
                     <div className="text-xs">
                       {metric === 'heartrate' ? `${Math.round(seg.val)} bpm` : `${seg.val?.toFixed?.(1) ?? seg.val} ${isRun ? 'min/mi' : 'mph'}`}
