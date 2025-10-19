@@ -22,11 +22,11 @@ function MiniLineChart({ x = [], y = [], width = 600, height = 200, stroke = '#2
     const xs0 = x && x.length ? x.slice(0, n) : Array.from({ length: n }, (_, i) => i);
     const ys0 = y.slice(0, n);
 
-    // filter out non-finite y and detect gaps in time (pauses)
+    // filter out null/NaN/non-finite y and detect gaps in time (pauses)
     const xs = [], ys = [];
     let lastTime = null;
     for (let i = 0; i < ys0.length; i++) {
-      if (Number.isFinite(ys0[i])) {
+      if (ys0[i] != null && Number.isFinite(ys0[i])) {
         const currentTime = xs0[i];
         // skip if there's a large gap (>120 seconds) indicating a pause
         if (lastTime !== null && currentTime - lastTime > 120) {
@@ -158,15 +158,17 @@ export default function ActivityPage() {
   const isRun = activity?.type === 'Run';
   const chartSeries = metric === 'heartrate' ? hr : (
     isRun
-      ? (speed?.map(v => v > 0 ? (1609.34 / (v * 60)) : NaN) ?? null) // min/mi
-      : (speed?.map(v => v * 2.23694) ?? null) // mph
+      ? (speed?.map(v => v > 0.1 ? (1609.34 / (v * 60)) : null) ?? null) // min/mi, filter very low speeds
+      : (speed?.map(v => v > 0 ? (v * 2.23694) : null) ?? null) // mph, filter zero speeds
   );
 
-  // For map coloring — derive min/max based on chosen metric
+  // For map coloring — derive min/max based on chosen metric, filtering out null/NaN values
   const colorStats = useMemo(() => {
     const series = chartSeries;
     if (!series || series.length === 0) return null;
-    return { min: Math.min(...series), max: Math.max(...series) };
+    const validValues = series.filter(v => v != null && Number.isFinite(v));
+    if (validValues.length === 0) return null;
+    return { min: Math.min(...validValues), max: Math.max(...validValues) };
   }, [chartSeries]);
 
   // Downsample for performance (aim ~1000 segments)
@@ -180,8 +182,11 @@ export default function ActivityPage() {
       const p1 = latlng[i];
       const p2 = latlng[Math.min(i + step, n - 1)];
       const val = chartSeries?.[i];
-      const color = colorStats ? hrColor(val, colorStats.min, colorStats.max) : '#3b82f6';
-      segments.push({ p1: { lat: p1[0], lng: p1[1] }, p2: { lat: p2[0], lng: p2[1] }, color, val });
+      // only add segments with valid values
+      if (val != null && Number.isFinite(val) && colorStats) {
+        const color = hrColor(val, colorStats.min, colorStats.max);
+        segments.push({ p1: { lat: p1[0], lng: p1[1] }, p2: { lat: p2[0], lng: p2[1] }, color, val });
+      }
     }
     return segments;
   }, [latlng, chartSeries, colorStats]);
